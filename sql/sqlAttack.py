@@ -79,7 +79,7 @@ def NormalfindLength(TargetUrl,payload,maxLength=50):
         else:
             print("error")
 
-def BruteForceCrackPassword(TargetUrl,start=0,end=0,wordlist,payload):
+def BruteForceCrackPassword(TargetUrl,start,end, wordlist , payload ):
     result = []
     for i in range(start,end):
         for a in wordlist:
