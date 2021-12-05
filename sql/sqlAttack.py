@@ -179,7 +179,7 @@ class Request():
 
 if __name__ == '__main__' :
 
-	help="Traget Url + options\n\n-binaryLength [ expected passLength ] \n-binaryCrack [passLength]\n-length [ Password Length ] To BruteForce Finding password length\n-crack [ Max password length ] edit the wordlist if you want"
+	help="Traget Url + options\n\n-binaryLength [ expected passLength ] \n-binaryCrack [passLength]\n-length [ Password Length ] To BruteForce Finding password length\n-crack [ password length ] edit the wordlist if you want"
 	# You Must change it manually
 	SiteCookies = {'TrackingId': '7MCkYBHEuTYqDjl4' , 'session':'F6Q9KI5uC2QcHV7GBa7gJ1dA7XfWdRYw'}
 	#proxies = {'http': 'http://127.0.0.1:8080', 'https': 'http://127.0.0.1:8080'}
